@@ -10,8 +10,6 @@ You're away from your keyboard. You still want to walk around, send chat, or loo
 
 G-Controller runs on your desktop as a Go-Earth extension. It opens a web server on your home network. Your phone connects to it and becomes a controller.
 
-No cloud. No accounts. No internet traffic between your devices.
-
 ```mermaid
 flowchart LR
   G[Habbo Client] <-->|packets| GE[Go-Earth]
@@ -49,8 +47,8 @@ Your desktop and phone need the same WiFi network.
 ## Setup
 
 ```bash
-git clone https://github.com/michyaraque/wired-script-engine.git
-cd wired-script-engine
+git clone https://github.com/michyaraque/g-controller.git
+cd g-controller
 make install
 ```
 
