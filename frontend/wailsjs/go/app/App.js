@@ -26,6 +26,10 @@ export function IsWebServerRunning() {
   return window['go']['app']['App']['IsWebServerRunning']();
 }
 
+export function StartMobileServer() {
+  return window['go']['app']['App']['StartMobileServer']();
+}
+
 export function ToggleWebServer() {
   return window['go']['app']['App']['ToggleWebServer']();
 }

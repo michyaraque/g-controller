@@ -9,8 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"wiredscriptengine/internal/logger"
-	"wiredscriptengine/internal/webserver"
+	"g-controller/internal/navigator"
+	"g-controller/internal/room"
+	"g-controller/internal/webserver"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	g "xabbo.b7c.io/goearth"
@@ -62,20 +63,22 @@ func init() {
 }
 
 type EngineManager struct {
-	ctx       context.Context
-	ext       *g.Ext
-	hub       *webserver.Hub
-	mu        sync.RWMutex
-	connected bool
-	roomID    int
-	hotel     string
-	canEdit   bool
-	canRead   bool
+	ctx             context.Context
+	ext             *g.Ext
+	hub             *webserver.Hub
+	roomMgr         *room.Manager
+	mu              sync.RWMutex
+	connected       bool
+	roomID          int
+	hotel           string
+	canEdit         bool
+	canRead         bool
+	navigatorResult *navigator.SearchResult
 
-	userX     int
-	userY     int
-	userDir   int
-	userID    int
+	userX   int
+	userY   int
+	userDir int
+	userID  int
 
 	moveDir atomic.Int32
 	moveWg  sync.WaitGroup
@@ -95,7 +98,7 @@ func NewEngineManager(ctx context.Context) *EngineManager {
 		ext: ext,
 	}
 
-	logger.EnableTrace(true)
+	em.roomMgr = room.New(ext, em.onUserPosition, em.onLocalUserFound)
 
 	ext.Initialized(em.onInitialized)
 	ext.Connected(em.onConnected)
@@ -103,9 +106,8 @@ func NewEngineManager(ctx context.Context) *EngineManager {
 
 	ext.Intercept(in.Chat, in.Whisper, in.Shout).With(em.handleChat)
 	ext.Intercept(in.OpenConnection).With(em.handleOpenConnection)
-	ext.Intercept(in.UserUpdate).With(em.handleUserUpdate)
-	ext.Intercept(in.WiredVariablesForObject).With(em.handleWiredVariables)
 	ext.Intercept(in.WiredPermissions).With(em.handleWiredPermissions)
+	ext.Intercept(in.NavigatorSearchResultBlocks).With(em.handleNavigatorSearchResultBlocks)
 
 	return em
 }
@@ -115,12 +117,10 @@ func (em *EngineManager) SetHub(hub *webserver.Hub) {
 }
 
 func (em *EngineManager) Start() {
-	logger.Info("Starting GoEarth extension...")
 	em.ext.Run()
 }
 
 func (em *EngineManager) Stop() {
-	logger.Info("Stopping GoEarth extension...")
 }
 
 func (em *EngineManager) GetStatus() EngineStatus {
@@ -140,10 +140,10 @@ func (em *EngineManager) GetUserPosition() UserPosition {
 	em.mu.RLock()
 	defer em.mu.RUnlock()
 	return UserPosition{
-		ID:   em.userID,
-		X:    em.userX,
-		Y:    em.userY,
-		Dir:  em.userDir,
+		ID:  em.userID,
+		X:   em.userX,
+		Y:   em.userY,
+		Dir: em.userDir,
 	}
 }
 
@@ -152,14 +152,12 @@ func (em *EngineManager) SendChat(msg string) {
 		return
 	}
 	go em.ext.Send(out.Chat, msg, 0, 2)
-	logger.Info("Sent chat: %s", msg)
 }
 
 func (em *EngineManager) SendMoveAvatar(targetX, targetY int) {
 	if em.ext == nil || !em.ext.IsConnected() {
 		return
 	}
-	logger.Info("MoveAvatar -> x=%d y=%d", targetX, targetY)
 	go em.ext.Send(out.MoveAvatar, targetX, targetY)
 }
 
@@ -175,6 +173,19 @@ func (em *EngineManager) SendLook(dir int) {
 	go em.ext.Send(out.LookTo, targetX, targetY)
 }
 
+func (em *EngineManager) RequestEnterRoom(flatId int) {
+	if em.ext == nil || !em.ext.IsConnected() {
+		return
+	}
+	go em.ext.Send(out.GetGuestRoom, flatId, 0, 1)
+}
+
+func (em *EngineManager) SearchNavigator(view, query string) {
+	if em.ext == nil || !em.ext.IsConnected() {
+		return
+	}
+	go em.ext.Send(out.NewNavigatorSearch, view, query)
+}
 
 func (em *EngineManager) HandleMove(dir int, x, y float64) {
 	if dir == 0 && (x != 0 || y != 0) {
@@ -189,7 +200,6 @@ func (em *EngineManager) HandleMove(dir int, x, y float64) {
 		em.stopCh = make(chan struct{})
 		em.moveWg.Add(1)
 		go em.moveLoop()
-		logger.Info("Movement started dir=%d", dir)
 	}
 
 	em.moveDir.Store(int32(dir))
@@ -200,7 +210,6 @@ func (em *EngineManager) StopMove() {
 		em.moveDir.Store(0)
 		close(em.stopCh)
 		em.moveWg.Wait()
-		logger.Info("Movement stopped")
 	}
 }
 
@@ -303,7 +312,6 @@ func (em *EngineManager) updateHubStatus() {
 }
 
 func (em *EngineManager) onInitialized(e g.InitArgs) {
-	logger.Info("Extension initialized")
 	runtime.EventsEmit(em.ctx, "engine:initialized")
 }
 
@@ -313,7 +321,8 @@ func (em *EngineManager) onConnected(e g.ConnectArgs) {
 	em.hotel = extractHotelCode(e.Host)
 	em.mu.Unlock()
 
-	logger.Info("Game connected (%s) - Hotel: %s", e.Host, em.hotel)
+	go em.ext.Send(out.LookTo, 0, 0)
+	em.roomMgr.ProbeLocalIndex()
 
 	runtime.EventsEmit(em.ctx, "engine:connected", map[string]interface{}{
 		"hotel": em.hotel,
@@ -334,7 +343,6 @@ func (em *EngineManager) onDisconnected() {
 	}
 	em.mu.Unlock()
 
-	logger.Info("Game disconnected")
 	runtime.EventsEmit(em.ctx, "engine:disconnected")
 	em.updateHubStatus()
 }
@@ -349,31 +357,21 @@ func (em *EngineManager) handleChat(e *g.Intercept) {
 	}
 }
 
-func (em *EngineManager) handleUserUpdate(e *g.Intercept) {
-	packet := e.Packet
-	if packet.Length() < 20 {
-		return
-	}
-
-	userID := packet.ReadInt()
-	packet.ReadInt()
-	x := packet.ReadInt()
-	y := packet.ReadInt()
-	packet.ReadString()
-	direction := packet.ReadInt()
-	packet.ReadInt()
-	packet.ReadInt()
-	packet.ReadString()
-
+func (em *EngineManager) onUserPosition(x, y, dir int) {
 	em.mu.Lock()
-	em.userID = userID
 	em.userX = x
 	em.userY = y
-	em.userDir = direction
+	em.userDir = dir
 	em.mu.Unlock()
 
-	logger.Trace("UserUpdate: id=%d pos=(%d,%d) dir=%d", userID, x, y, direction)
 	em.updateHubStatus()
+}
+
+func (em *EngineManager) onLocalUserFound(index int) {
+	em.mu.Lock()
+	em.userID = index
+	em.mu.Unlock()
+
 }
 
 func (em *EngineManager) handleOpenConnection(e *g.Intercept) {
@@ -384,49 +382,8 @@ func (em *EngineManager) handleOpenConnection(e *g.Intercept) {
 	em.roomID = roomID
 	em.mu.Unlock()
 
-	logger.Info("Room ID detected: %d", roomID)
-
 	runtime.EventsEmit(em.ctx, "engine:room-detected", map[string]interface{}{
 		"roomId": roomID,
-	})
-	em.updateHubStatus()
-}
-
-func (em *EngineManager) handleWiredVariables(e *g.Intercept) {
-	packet := e.Packet
-	if packet.Length() < 8 {
-		return
-	}
-
-	packet.ReadInt()
-	count := packet.ReadInt()
-
-	currentRoomID := 0
-	for i := 0; i < count; i++ {
-		if packet.Pos >= packet.Length() {
-			break
-		}
-
-		key := packet.ReadString()
-		value := packet.ReadInt()
-
-		if key == "-380" {
-			currentRoomID = value
-		}
-	}
-
-	if currentRoomID == 0 {
-		return
-	}
-
-	em.mu.Lock()
-	em.roomID = currentRoomID
-	em.mu.Unlock()
-
-	logger.Info("Room ID detected: %d", currentRoomID)
-
-	runtime.EventsEmit(em.ctx, "engine:room-detected", map[string]interface{}{
-		"roomId": currentRoomID,
 	})
 	em.updateHubStatus()
 }
@@ -439,7 +396,6 @@ func (em *EngineManager) handleWiredPermissions(e *g.Intercept) {
 		em.canEdit = false
 		em.canRead = false
 		em.mu.Unlock()
-		logger.Info("WiredPermissions: No access")
 		em.updateHubStatus()
 		return
 	}
@@ -451,8 +407,19 @@ func (em *EngineManager) handleWiredPermissions(e *g.Intercept) {
 	em.canRead = canRead
 	em.mu.Unlock()
 
-	logger.Info("WiredPermissions: edit=%v, read=%v", canEdit, canRead)
 	em.updateHubStatus()
+}
+
+func (em *EngineManager) handleNavigatorSearchResultBlocks(e *g.Intercept) {
+	result := navigator.Parse(e.Packet)
+
+	em.mu.Lock()
+	em.navigatorResult = &result
+	em.mu.Unlock()
+
+	if em.hub != nil {
+		em.hub.BroadcastNavigatorResult(result)
+	}
 }
 
 func extractHotelCode(host string) string {

@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"sync"
 
-	"wiredscriptengine/internal/logger"
-	"wiredscriptengine/internal/webserver"
+	"g-controller/internal/logger"
+	"g-controller/internal/webserver"
 
 	"github.com/skip2/go-qrcode"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -22,7 +22,6 @@ type App struct {
 }
 
 func NewApp() *App {
-	loadConfig()
 	return &App{}
 }
 
@@ -35,10 +34,6 @@ func (a *App) Startup(ctx context.Context) {
 	a.engineManager.SetHub(a.webServer.GetHub())
 
 	go a.engineManager.Start()
-
-	if IsMobileServerEnabled() {
-		a.startMobileServer()
-	}
 }
 
 func (a *App) DomReady(ctx context.Context) {
@@ -66,6 +61,21 @@ func (a *App) Shutdown(ctx context.Context) {
 	if a.engineManager != nil {
 		a.engineManager.Stop()
 	}
+}
+
+func (a *App) StartMobileServer() string {
+	a.webServerMu.RLock()
+	running := a.webServer.IsRunning()
+	a.webServerMu.RUnlock()
+
+	if running {
+		return a.webServer.GetURL()
+	}
+
+	a.startMobileServer()
+	url := a.webServer.GetURL()
+	wailsRuntime.EventsEmit(a.ctx, "mobile-server:url", url)
+	return url
 }
 
 func (a *App) ToggleWebServer() string {

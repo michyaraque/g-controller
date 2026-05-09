@@ -1,4 +1,4 @@
-module wiredscriptengine
+module g-controller
 
 go 1.23
 

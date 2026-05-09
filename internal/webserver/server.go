@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"sync"
 
+	"g-controller/internal/navigator"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -35,6 +37,8 @@ type ActionHandler interface {
 	StopMove()
 	SendLook(dir int)
 	SendChat(msg string)
+	RequestEnterRoom(flatId int)
+	SearchNavigator(view, query string)
 }
 
 type Hub struct {
@@ -157,6 +161,7 @@ type WebSocketMessage struct {
 		X float64 `json:"x"`
 		Y float64 `json:"y"`
 	} `json:"direction,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
 }
 
 type StatusMessage struct {
@@ -170,6 +175,21 @@ type StatusMessage struct {
 	UserX       int    `json:"userX"`
 	UserY       int    `json:"userY"`
 	UserDir     int    `json:"userDir"`
+}
+
+func (h *Hub) BroadcastNavigatorResult(result navigator.SearchResult) {
+	msg := WebSocketMessage{
+		Type:  "navigator",
+		Data:  result,
+	}
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+	select {
+	case h.broadcast <- data:
+	default:
+	}
 }
 
 func NewServer(ctx context.Context, port int, actions ActionHandler) *Server {
@@ -214,6 +234,16 @@ func NewServer(ctx context.Context, port int, actions ActionHandler) *Server {
 					hub.actions.SendLook(msg.Dir)
 				case "move_stop":
 					hub.actions.StopMove()
+				case "enter_room":
+					if rm, ok := msg.Data.(float64); ok {
+						hub.actions.RequestEnterRoom(int(rm))
+					}
+				case "navigator_search":
+					if d, ok := msg.Data.(map[string]interface{}); ok {
+						view, _ := d["view"].(string)
+						query, _ := d["query"].(string)
+						hub.actions.SearchNavigator(view, query)
+					}
 				}
 			}
 		}()

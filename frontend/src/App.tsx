@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import TitleBar from '@/components/TitleBar'
 import Console from '@/components/Console'
-import { GetEngineStatus, GetUserPosition, ToggleWebServer, IsWebServerRunning, GetWebServerURL, GenerateQR } from '@wails/go/app/App'
+import { GetEngineStatus, GetUserPosition, ToggleWebServer, IsWebServerRunning, GetWebServerURL, GenerateQR, StartMobileServer } from '@wails/go/app/App'
 
 type EngineStatus = {
   connected: boolean
@@ -31,10 +31,23 @@ function App() {
   const [mobileURL, setMobileURL] = useState<string>('')
   const [qrData, setQrData] = useState<string>('')
   const [webServerRunning, setWebServerRunning] = useState(false)
+  const [autoStart, setAutoStart] = useState(() => {
+    return localStorage.getItem('autoStartMobileServer') === 'true'
+  })
 
   useEffect(() => {
     checkServerStatus()
     updateEngineStatus()
+
+    if (autoStart) {
+      StartMobileServer().then(url => {
+        if (url) {
+          setMobileURL(url)
+          setWebServerRunning(true)
+          generateQR(url)
+        }
+      }).catch(() => {})
+    }
     const interval = setInterval(() => {
       updateEngineStatus()
       checkServerStatus()
@@ -167,7 +180,7 @@ function App() {
           <div className="rounded-lg border border-border bg-bg-secondary p-4">
             <div className="flex items-start gap-4">
               <div className="flex-1">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">Mobile Controller</span>
                   <button
                     onClick={handleToggleServer}
@@ -180,6 +193,18 @@ function App() {
                     />
                   </button>
                 </div>
+                <label className="flex items-center gap-2 mb-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoStart}
+                    onChange={(e) => {
+                      setAutoStart(e.target.checked)
+                      localStorage.setItem('autoStartMobileServer', String(e.target.checked))
+                    }}
+                    className="w-3 h-3 accent-green-500"
+                  />
+                  <span className="text-xs text-text-secondary">Auto-start on startup</span>
+                </label>
 
                 {webServerRunning && mobileURL ? (
                   <div className="flex items-start gap-3">
@@ -212,12 +237,7 @@ function App() {
               </div>
             </div>
           </div>
-
-          <div className="flex-1" />
-
-          <p className="text-center text-xs text-text-secondary">G-Controller - GoEarth Extension</p>
         </div>
-
         <Console logs={logs} onClear={() => setLogs([])} />
       </div>
     </div>

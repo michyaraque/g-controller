@@ -4,25 +4,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-  <meta name="theme-color" content="#111111">
+  <meta name="theme-color" content="#0a0a0f">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="/manifest.json">
-  <title>G-Controller Mobile</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <title>G-Controller</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
 
-    html,
-    body {
+    html, body {
       width: 100%;
       height: 100%;
-      background: #111;
+      background: #0a0a0f;
       color: #e0e0e0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       overflow: hidden;
       touch-action: none;
       -webkit-user-select: none;
@@ -32,16 +34,15 @@
       height: 100dvh;
     }
 
+    /* ── Status Bar ── */
     .status-bar {
-      height: 44px;
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 16px;
-      background: #181818;
-      border-bottom: 1px solid #2a2a2a;
-      font-size: 12px;
-      color: #888;
+      padding: 0 14px;
+      background: linear-gradient(180deg, #13131a 0%, #0e0e14 100%);
+      border-bottom: 1px solid #1e1e2a;
       flex-shrink: 0;
     }
 
@@ -55,19 +56,61 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #f44;
-      transition: background 0.3s;
+      background: #ef4444;
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+      transition: all 0.3s;
     }
 
     .status-dot.connected {
-      background: #4c4;
+      background: #22c55e;
+      box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
     }
 
+    #statusText {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      letter-spacing: 0.3px;
+    }
+
+    #roomInfo {
+      font-size: 11px;
+      font-weight: 500;
+      color: #4a4a5a;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: linear-gradient(135deg, rgba(235, 141, 40, 0.12) 0%, rgba(235, 141, 40, 0.06) 100%);
+      border: 1px solid rgba(235, 141, 40, 0.25);
+      color: #eb8d28;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      font-family: inherit;
+    }
+
+    .nav-btn:active {
+      transform: scale(0.96);
+    }
+
+    .nav-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ── Main Area ── */
     .main-area {
       flex: 1;
       display: flex;
       flex-direction: column;
       min-height: 0;
+      position: relative;
     }
 
     .controls-row {
@@ -77,6 +120,7 @@
       min-height: 0;
     }
 
+    /* ── Joystick ── */
     .joystick-zone {
       flex: 1.2;
       display: flex;
@@ -93,8 +137,10 @@
       max-width: 260px;
       max-height: 260px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.08) 100%);
-      border: 2px solid rgba(255, 255, 255, 0.1);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(235, 141, 40, 0.03) 0%, transparent 70%),
+        radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.06) 100%);
+      border: 1.5px solid rgba(255, 255, 255, 0.07);
       position: relative;
       touch-action: none;
       overflow: hidden;
@@ -103,16 +149,13 @@
     .joystick-base::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      top: 50%;
+      left: 50%;
+      width: 60%;
+      height: 60%;
+      transform: translate(-50%, -50%);
       border-radius: 50%;
-      background:
-        linear-gradient(0deg, transparent 49.5%, rgba(255, 255, 255, 0.06) 49.5%, rgba(255, 255, 255, 0.06) 50.5%, transparent 50.5%),
-        linear-gradient(45deg, transparent 49.5%, rgba(255, 255, 255, 0.06) 49.5%, rgba(255, 255, 255, 0.06) 50.5%, transparent 50.5%),
-        linear-gradient(90deg, transparent 49.5%, rgba(255, 255, 255, 0.06) 49.5%, rgba(255, 255, 255, 0.06) 50.5%, transparent 50.5%),
-        linear-gradient(135deg, transparent 49.5%, rgba(255, 255, 255, 0.06) 49.5%, rgba(255, 255, 255, 0.06) 50.5%, transparent 50.5%);
+      border: 1px dashed rgba(255, 255, 255, 0.04);
       pointer-events: none;
     }
 
@@ -120,13 +163,22 @@
       width: 36%;
       height: 36%;
       border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #eb8d28, #c4701a);
+      background: radial-gradient(circle at 35% 35%, #f5a623, #d4881a);
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
-      box-shadow: 0 4px 20px rgba(235, 141, 40, 0.3);
+      box-shadow:
+        0 2px 12px rgba(235, 141, 40, 0.35),
+        inset 0 1px 2px rgba(255, 255, 255, 0.2);
+      transition: box-shadow 0.15s;
+    }
+
+    .joystick-thumb.active {
+      box-shadow:
+        0 2px 24px rgba(235, 141, 40, 0.5),
+        inset 0 1px 2px rgba(255, 255, 255, 0.2);
     }
 
     .joystick-dir-label {
@@ -134,23 +186,26 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: clamp(14px, 5vmin, 22px);
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.15);
+      font-size: clamp(14px, 5vmin, 20px);
+      font-weight: 800;
+      color: rgba(235, 141, 40, 0.12);
       pointer-events: none;
       z-index: 1;
+      letter-spacing: 1px;
     }
 
     .joystick-segment-label {
       position: absolute;
-      font-size: clamp(9px, 2.5vmin, 13px);
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.12);
+      font-size: clamp(8px, 2.2vmin, 11px);
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.06);
       pointer-events: none;
       z-index: 1;
       transform: translate(-50%, -50%);
+      letter-spacing: 0.5px;
     }
 
+    /* ── Look Wheel ── */
     .look-zone {
       flex: 0.8;
       display: flex;
@@ -166,28 +221,38 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(3, 1fr);
-      gap: 4px;
+      gap: 3px;
       width: min(45vmin, 170px);
       height: min(45vmin, 170px);
     }
 
     .look-btn {
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      color: #ccc;
-      font-size: clamp(14px, 4vmin, 20px);
       display: flex;
       align-items: center;
       justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      color: #555;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: background 0.1s;
+      transition: all 0.1s;
+    }
+
+    .look-btn svg {
+      width: 18px;
+      height: 18px;
+      opacity: 0.5;
     }
 
     .look-btn:active {
-      background: rgba(235, 141, 40, 0.3);
-      border-color: #eb8d28;
+      background: rgba(235, 141, 40, 0.15);
+      border-color: rgba(235, 141, 40, 0.4);
+      color: #eb8d28;
+    }
+
+    .look-btn:active svg {
+      opacity: 1;
     }
 
     .look-btn.empty {
@@ -196,74 +261,459 @@
       pointer-events: none;
     }
 
+    /* ── Chat Bar ── */
     .chat-bar {
       height: 56px;
       display: flex;
       align-items: center;
       padding: 0 12px;
-      background: #181818;
-      border-top: 1px solid #2a2a2a;
+      background: linear-gradient(0deg, #13131a 0%, #0e0e14 100%);
+      border-top: 1px solid #1e1e2a;
       gap: 8px;
       flex-shrink: 0;
     }
 
     .chat-input {
       flex: 1;
-      background: #222;
-      border: 1px solid #333;
-      border-radius: 24px;
-      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 16px;
       color: #e0e0e0;
-      font-size: 16px;
+      font-size: 15px;
+      font-family: inherit;
       outline: none;
       min-width: 0;
+      transition: border-color 0.2s;
+    }
+
+    .chat-input::placeholder {
+      color: #444;
     }
 
     .chat-input:focus {
-      border-color: #eb8d28;
+      border-color: rgba(235, 141, 40, 0.5);
     }
 
     .chat-send {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
       border: none;
-      background: #eb8d28;
-      color: #111;
-      font-size: 16px;
+      background: linear-gradient(135deg, #eb8d28, #d4881a);
+      color: #fff;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      transition: transform 0.1s;
     }
 
+    .chat-send:active {
+      transform: scale(0.93);
+    }
+
+    .chat-send svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ── Position Display ── */
     .pos-display {
       position: absolute;
-      top: 8px;
+      top: 10px;
       left: 50%;
       transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 5px;
       font-size: 11px;
-      color: #555;
-      font-family: monospace;
+      color: #3a3a4a;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
       pointer-events: none;
+      background: rgba(10, 10, 15, 0.7);
+      padding: 4px 10px;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
     }
 
+    .pos-display svg {
+      width: 12px;
+      height: 12px;
+      opacity: 0.4;
+    }
+
+    /* ── Room Modal ── */
+    .room-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #0a0a0f;
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+    }
+
+    .room-modal.active {
+      display: flex;
+    }
+
+    .room-modal-header {
+      padding: 14px 16px;
+      background: linear-gradient(180deg, #13131a 0%, #0e0e14 100%);
+      border-bottom: 1px solid #1e1e2a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .room-modal-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #eb8d28;
+      margin: 0;
+    }
+
+    .room-modal-header h3 svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .room-close {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      color: #666;
+      cursor: pointer;
+    }
+
+    .room-close svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .room-close:active {
+      background: rgba(235, 141, 40, 0.1);
+    }
+
+    /* ── Tabs ── */
+    .room-tabs {
+      display: flex;
+      background: #0e0e14;
+      border-bottom: 1px solid #1e1e2a;
+      flex-shrink: 0;
+    }
+
+    .room-tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 10px 4px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .room-tab svg {
+      width: 16px;
+      height: 16px;
+      opacity: 0.3;
+    }
+
+    .room-tab span {
+      font-size: 9px;
+      font-weight: 600;
+      color: #555;
+      letter-spacing: 0.2px;
+    }
+
+    .room-tab.active {
+      border-bottom-color: #eb8d28;
+    }
+
+    .room-tab.active svg {
+      opacity: 1;
+      color: #eb8d28;
+    }
+
+    .room-tab.active span {
+      color: #eb8d28;
+    }
+
+    .room-tab:active {
+      background: rgba(235, 141, 40, 0.05);
+    }
+
+    /* ── Search ── */
+    .room-search {
+      padding: 8px 12px;
+      background: #0e0e14;
+      border-bottom: 1px solid #1e1e2a;
+      flex-shrink: 0;
+      display: flex;
+      gap: 6px;
+    }
+
+    .room-search input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 9px 12px;
+      color: #e0e0e0;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .room-search input::placeholder {
+      color: #444;
+    }
+
+    .room-search input:focus {
+      border-color: rgba(235, 141, 40, 0.5);
+    }
+
+    .room-search-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #eb8d28, #d4881a);
+      border: none;
+      color: #fff;
+      padding: 0 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .room-search-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ── Room List ── */
+    .room-list {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .room-block-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 16px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #eb8d28;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      background: #0a0a0f;
+      position: sticky;
+      top: 0;
+    }
+
+    .room-block-title svg {
+      width: 13px;
+      height: 13px;
+      opacity: 0.6;
+    }
+
+    .room-block-title .block-count {
+      margin-left: auto;
+      background: rgba(235, 141, 40, 0.1);
+      color: #eb8d28;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-weight: 700;
+    }
+
+    /* ── Room Card ── */
+    .room-card {
+      display: flex;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s;
+    }
+
+    .room-card:active {
+      background: rgba(235, 141, 40, 0.05);
+    }
+
+    .room-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(235, 141, 40, 0.12), rgba(235, 141, 40, 0.04));
+      border: 1px solid rgba(235, 141, 40, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-right: 12px;
+    }
+
+    .room-card-icon svg {
+      width: 20px;
+      height: 20px;
+      color: #eb8d28;
+      opacity: 0.7;
+    }
+
+    .room-card-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .room-card-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ddd;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .room-card-desc {
+      font-size: 12px;
+      color: #5a5a6a;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .room-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: #4a4a5a;
+    }
+
+    .room-card-meta .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .room-card-meta .meta-item svg {
+      width: 12px;
+      height: 12px;
+      opacity: 0.4;
+    }
+
+    .room-tag {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(235, 141, 40, 0.08);
+      color: #c97a20;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    .occupancy-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.2px;
+    }
+
+    .occupancy-pill.green {
+      background: rgba(34, 197, 94, 0.12);
+      color: #22c55e;
+    }
+
+    .occupancy-pill.yellow {
+      background: rgba(234, 179, 8, 0.12);
+      color: #eab308;
+    }
+
+    .occupancy-pill.red {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+    }
+
+    .occupancy-pill svg {
+      width: 11px;
+      height: 11px;
+    }
+
+    .room-tags {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+    }
+
+    .room-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      text-align: center;
+      color: #3a3a4a;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .room-empty svg {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 12px;
+      opacity: 0.15;
+    }
+
+    /* ── Install Banner ── */
     .install-banner {
       position: fixed;
-      bottom: 64px;
+      bottom: 72px;
       left: 12px;
       right: 12px;
-      background: #1e1e1e;
-      border: 1px solid #333;
-      border-radius: 12px;
+      background: linear-gradient(135deg, #1a1a24, #14141c);
+      border: 1px solid #2a2a3a;
+      border-radius: 14px;
       padding: 12px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
       z-index: 100;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+      box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.6);
       transition: opacity 0.3s;
     }
 
@@ -285,35 +735,63 @@
 
     .install-text span {
       font-size: 11px;
-      color: #999;
+      color: #666;
       line-height: 1.3;
     }
 
     .install-dismiss {
       background: none;
       border: none;
-      color: #666;
-      font-size: 18px;
-      padding: 4px 8px;
+      color: #555;
       cursor: pointer;
       flex-shrink: 0;
+      padding: 4px;
+    }
+
+    .install-dismiss svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ── Scrollbar ── */
+    .room-list::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .room-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .room-list::-webkit-scrollbar-thumb {
+      background: rgba(235, 141, 40, 0.2);
+      border-radius: 3px;
     }
   </style>
 </head>
 
 <body>
+  <!-- Status Bar -->
   <div class="status-bar">
     <div class="status-left">
       <span class="status-dot" id="statusDot"></span>
       <span id="statusText">Connecting...</span>
     </div>
     <div id="roomInfo"></div>
+    <button class="nav-btn" id="navBtn">
+      <i data-lucide="layout-grid" style="width:14px;height:14px"></i>
+      <span>Rooms (0)</span>
+    </button>
   </div>
 
+  <!-- Main Controls -->
   <div class="main-area">
-    <div class="pos-display" id="posDisplay"></div>
+    <div class="pos-display" id="posDisplay">
+      <i data-lucide="map-pin" style="width:12px;height:12px"></i>
+      <span>--, --</span>
+    </div>
 
     <div class="controls-row">
+      <!-- Joystick -->
       <div class="joystick-zone">
         <div class="joystick-base" id="joystickBase">
           <div class="joystick-dir-label" id="dirLabel"></div>
@@ -329,46 +807,94 @@
         </div>
       </div>
 
+      <!-- Look Wheel -->
       <div class="look-zone">
         <div class="look-wheel">
-          <button class="look-btn" data-dir="8">↖</button>
-           <button class="look-btn" data-dir="1">↑</button>
-            <button class="look-btn" data-dir="2">↗</button>
-           <button class="look-btn" data-dir="7">←</button>
-           <button class="look-btn empty"></button>
-           <button class="look-btn" data-dir="3">→</button>
-            <button class="look-btn" data-dir="6">↙</button>
-           <button class="look-btn" data-dir="5">↓</button>
-           <button class="look-btn" data-dir="4">↘</button>
+          <button class="look-btn" data-dir="8"><i data-lucide="arrow-up-left"></i></button>
+          <button class="look-btn" data-dir="1"><i data-lucide="arrow-up"></i></button>
+          <button class="look-btn" data-dir="2"><i data-lucide="arrow-up-right"></i></button>
+          <button class="look-btn" data-dir="7"><i data-lucide="arrow-left"></i></button>
+          <button class="look-btn empty"></button>
+          <button class="look-btn" data-dir="3"><i data-lucide="arrow-right"></i></button>
+          <button class="look-btn" data-dir="6"><i data-lucide="arrow-down-left"></i></button>
+          <button class="look-btn" data-dir="5"><i data-lucide="arrow-down"></i></button>
+          <button class="look-btn" data-dir="4"><i data-lucide="arrow-down-right"></i></button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Chat Bar -->
   <div class="chat-bar">
-    <input type="text" class="chat-input" id="chatInput" placeholder="Chat..." autocomplete="off">
-    <button class="chat-send" id="chatSend">&#9658;</button>
+    <input type="text" class="chat-input" id="chatInput" placeholder="Send a message..." autocomplete="off">
+    <button class="chat-send" id="chatSend"><i data-lucide="send"></i></button>
   </div>
 
+  <!-- Room Browser Modal -->
+  <div class="room-modal" id="roomModal">
+    <div class="room-modal-header">
+      <h3><i data-lucide="door-open"></i> Room Browser</h3>
+      <button class="room-close" id="roomClose"><i data-lucide="x"></i></button>
+    </div>
+    <div class="room-tabs">
+      <button class="room-tab active" data-view="official_view">
+        <span>Public</span>
+      </button>
+      <button class="room-tab" data-view="hotel_view">
+        <span>All Rooms</span>
+      </button>
+      <button class="room-tab" data-view="roomads_view">
+        <span>Events</span>
+      </button>
+      <button class="room-tab" data-view="myworld_view">
+        <span>My World</span>
+      </button>
+    </div>
+    <div class="room-search">
+      <input type="text" id="roomSearchInput" placeholder="Search rooms..." autocomplete="off">
+      <button class="room-search-btn" id="roomSearchBtn"><i data-lucide="search"></i></button>
+    </div>
+    <div class="room-list" id="roomList">
+      <div class="room-empty">
+        <i data-lucide="layout-grid" style="width:40px;height:40px"></i>
+        Tap a tab to start browsing
+      </div>
+    </div>
+  </div>
+
+  <!-- Install Banner -->
   <div class="install-banner hidden" id="installBanner">
     <div class="install-text">
       <strong>Install G-Controller</strong>
       <span>Install for offline access and home screen shortcut</span>
     </div>
-    <button class="install-dismiss" id="installDismiss">&times;</button>
+    <button class="install-dismiss" id="installDismiss"><i data-lucide="x"></i></button>
   </div>
 
   <script>
-    var ws = null;
-    var statusDot = document.getElementById('statusDot');
-    var statusText = document.getElementById('statusText');
-    var roomInfo = document.getElementById('roomInfo');
-    var posDisplay = document.getElementById('posDisplay');
-    var chatInput = document.getElementById('chatInput');
-    var chatSend = document.getElementById('chatSend');
+    lucide.createIcons();
+
+    let ws = null;
+    let statusDot = document.getElementById('statusDot');
+    let statusText = document.getElementById('statusText');
+    let roomInfo = document.getElementById('roomInfo');
+    let posDisplay = document.getElementById('posDisplay');
+    let chatInput = document.getElementById('chatInput');
+    let chatSend = document.getElementById('chatSend');
+    let navBtn = document.getElementById('navBtn');
+    let roomModal = document.getElementById('roomModal');
+    let roomClose = document.getElementById('roomClose');
+    let roomList = document.getElementById('roomList');
+    let roomSearchInput = document.getElementById('roomSearchInput');
+    let roomSearchBtn = document.getElementById('roomSearchBtn');
+    let navigatorData = null;
+    let currentNavView = 'official_view';
+    let eventsBlockNames = ['Top Promotions', 'Music and Party', 'RPG Games', 'Help Centers', 'Trading', 'Games', 'Works'];
+    let myWorldBlockNames = ['My Rooms', 'My Favorite Rooms', 'My Groups', 'My Room Visit History', "My Friend's Rooms", 'Rooms Where I Have Rights', 'Frequently Visited Rooms'];
+    let allRoomsBlockNames = ['Most Popular Rooms', 'Recommended For You'];
 
     function connect() {
-      var proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      let proto = location.protocol === 'https:' ? 'wss' : 'ws';
       ws = new WebSocket(proto + '://' + location.host + '/ws');
 
       ws.onopen = function () {
@@ -384,7 +910,7 @@
 
       ws.onmessage = function (e) {
         try {
-          var data = JSON.parse(e.data);
+          let data = JSON.parse(e.data);
           if (data.type === 'status') {
             if (data.connected) {
               statusDot.classList.add('connected');
@@ -393,20 +919,24 @@
               statusDot.classList.remove('connected');
               statusText.textContent = 'Offline';
             }
-            var info = '';
+            let info = '';
             if (data.roomId) info = 'Room ' + data.roomId;
-            if (data.hotel) info += ' - ' + data.hotel.toUpperCase();
+            if (data.hotel) info += ' · ' + data.hotel.toUpperCase();
             roomInfo.textContent = info;
             if (data.connected) {
-              posDisplay.textContent = data.userX + ', ' + data.userY;
+              let posSpan = posDisplay.querySelector('span');
+              if (posSpan) posSpan.textContent = data.userX + ', ' + data.userY;
             }
+          } else if (data.type === 'navigator') {
+            navigatorData = data.data;
+            renderRooms(navigatorData);
           }
         } catch (err) { }
       };
     }
 
     function sendChat() {
-      var msg = chatInput.value.trim();
+      let msg = chatInput.value.trim();
       if (!msg || !ws || ws.readyState !== WebSocket.OPEN) return;
       ws.send(JSON.stringify({ type: 'chat', message: msg }));
       chatInput.value = '';
@@ -416,14 +946,15 @@
     chatSend.addEventListener('click', sendChat);
     chatInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') sendChat(); });
 
-    var base = document.getElementById('joystickBase');
-    var thumb = document.getElementById('joystickThumb');
-    var dirLabel = document.getElementById('dirLabel');
-    var lastDir = null;
-    var currentMove = null;
-    var moveInterval = null;
+    /* ── Joystick ── */
+    let base = document.getElementById('joystickBase');
+    let thumb = document.getElementById('joystickThumb');
+    let dirLabel = document.getElementById('dirLabel');
+    let lastDir = null;
+    let currentMove = null;
+    let moveInterval = null;
 
-    var dirLabels = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'];
+    let dirLabels = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'];
 
     function snapAngle(a) {
       return Math.round(a / (Math.PI / 4)) * (Math.PI / 4);
@@ -446,32 +977,33 @@
     }
 
     function handleJoystick(cx, cy) {
-      var rect = base.getBoundingClientRect();
-      var halfW = rect.width / 2;
-      var dx = cx - rect.left - halfW;
-      var dy = cy - rect.top - halfW;
-      var maxDist = halfW - 16;
-      var dist = Math.min(Math.sqrt(dx * dx + dy * dy), maxDist);
+      let rect = base.getBoundingClientRect();
+      let halfW = rect.width / 2;
+      let dx = cx - rect.left - halfW;
+      let dy = cy - rect.top - halfW;
+      let maxDist = halfW - 16;
+      let dist = Math.min(Math.sqrt(dx * dx + dy * dy), maxDist);
 
       if (dist <= 10) {
         resetJoystick();
         return;
       }
 
-      var angle = Math.atan2(dy, dx);
-      var snapped = snapAngle(angle);
+      let angle = Math.atan2(dy, dx);
+      let snapped = snapAngle(angle);
 
-      var nx = Math.cos(snapped);
-      var ny = Math.sin(snapped);
-      var tx = nx * maxDist;
-      var ty = ny * maxDist;
+      let nx = Math.cos(snapped);
+      let ny = Math.sin(snapped);
+      let tx = nx * maxDist;
+      let ty = ny * maxDist;
       thumb.style.transform = 'translate(calc(-50% + ' + tx + 'px), calc(-50% + ' + ty + 'px))';
+      thumb.classList.add('active');
 
       currentMove = { x: nx, y: ny };
       startMoveLoop();
 
-      var di = ((Math.round(snapped / (Math.PI / 4)) % 8) + 8) % 8;
-      var label = dirLabels[di];
+      let di = ((Math.round(snapped / (Math.PI / 4)) % 8) + 8) % 8;
+      let label = dirLabels[di];
 
       if (label !== lastDir) {
         lastDir = label;
@@ -483,6 +1015,7 @@
       stopMoveLoop();
       currentMove = null;
       thumb.style.transform = 'translate(-50%, -50%)';
+      thumb.classList.remove('active');
       lastDir = null;
       dirLabel.textContent = '';
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -510,30 +1043,26 @@
     });
     document.addEventListener('mouseup', function () { base._drag = false; resetJoystick(); });
 
+    /* ── Look Wheel ── */
     document.querySelectorAll('.look-btn[data-dir]').forEach(function (btn) {
       btn.addEventListener('pointerdown', function (e) {
         e.preventDefault();
-        var dir = parseInt(btn.getAttribute('data-dir'));
-        console.log('look button pressed: dir=' + dir + ' wsReady=' + (ws ? ws.readyState : 'null'));
+        let dir = parseInt(btn.getAttribute('data-dir'));
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'look', dir: dir }));
         }
       });
     });
 
-    var deferredPrompt = null;
-    var installBanner = document.getElementById('installBanner');
-    var installDismiss = document.getElementById('installDismiss');
-    var installDismissed = localStorage.getItem('pwa_install_dismissed');
-
-    var isInstalled = window.matchMedia('(display-mode: standalone)').matches;
+    /* ── PWA Install ── */
+    let deferredPrompt = null;
+    let installBanner = document.getElementById('installBanner');
+    let installDismiss = document.getElementById('installDismiss');
+    let installDismissed = localStorage.getItem('pwa_install_dismissed');
+    let isInstalled = window.matchMedia('(display-mode: standalone)').matches;
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then(function (reg) {
-        console.log('SW registered');
-      }).catch(function (err) {
-        console.log('SW registration failed:', err);
-      });
+      navigator.serviceWorker.register('/sw.js').catch(function () { });
     }
 
     window.addEventListener('beforeinstallprompt', function (e) {
@@ -561,24 +1090,12 @@
 
     installBanner.addEventListener('click', async function (e) {
       if (e.target === installDismiss || installDismiss.contains(e.target)) return;
-
       if (deferredPrompt) {
         deferredPrompt.prompt();
-        var result = await deferredPrompt.userChoice;
-        if (result.outcome === 'accepted') {
-          console.log('PWA installed');
-        }
+        let result = await deferredPrompt.userChoice;
+        if (result.outcome === 'accepted') { }
         deferredPrompt = null;
         installBanner.classList.add('hidden');
-      } else {
-        var hintEl = installBanner.querySelector('.install-text span');
-        if (navigator.userAgent.match(/Android/)) {
-          hintEl.textContent = 'Tap the menu (⋮) → \"Add to Home screen\"';
-        } else if (navigator.userAgent.match(/iPhone|iPad/)) {
-          hintEl.textContent = 'Tap Share → \"Add to Home Screen\"';
-        } else {
-          hintEl.textContent = 'Use your browser menu to install this app';
-        }
       }
     });
 
@@ -587,6 +1104,162 @@
     }
 
     connect();
+
+    /* ── Room Navigator ── */
+    navBtn.addEventListener('click', function () {
+      roomModal.classList.add('active');
+      roomSearchInput.value = '';
+      roomList.innerHTML = '<div class="room-empty"><i data-lucide="loader-2" style="width:40px;height:40px;animation:spin 1s linear infinite"></i>Loading rooms...</div>';
+      lucide.createIcons();
+      sendNavSearch(currentNavView, '');
+    });
+
+    roomClose.addEventListener('click', function () {
+      roomModal.classList.remove('active');
+    });
+
+    let tabBtns = document.querySelectorAll('.room-tab');
+    for (let ti = 0; ti < tabBtns.length; ti++) {
+      tabBtns[ti].addEventListener('click', function () {
+        for (let ti2 = 0; ti2 < tabBtns.length; ti2++) {
+          tabBtns[ti2].classList.remove('active');
+        }
+        this.classList.add('active');
+        currentNavView = this.getAttribute('data-view');
+        roomSearchInput.value = '';
+        roomList.innerHTML = '<div class="room-empty"><i data-lucide="loader-2" style="width:40px;height:40px;animation:spin 1s linear infinite"></i>Loading rooms...</div>';
+        lucide.createIcons();
+        sendNavSearch(currentNavView, '');
+      });
+    }
+
+    roomSearchBtn.addEventListener('click', function () {
+      let q = roomSearchInput.value.trim();
+      sendNavSearch(currentNavView, q);
+    });
+
+    roomSearchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        let q = roomSearchInput.value.trim();
+        sendNavSearch(currentNavView, q);
+      }
+    });
+
+    function sendNavSearch(view, query) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'navigator_search', data: { view: view, query: query } }));
+      }
+    }
+
+    function renderRooms(data, filter) {
+      if (!data || !data.blocks || data.blocks.length === 0) {
+        roomList.innerHTML = '<div class="room-empty"><i data-lucide="ghost"></i>No rooms available</div>';
+        lucide.createIcons();
+        navBtn.querySelector('span').textContent = 'Rooms (0)';
+        return;
+      }
+
+      let totalRooms = 0;
+      for (let b = 0; b < data.blocks.length; b++) {
+        totalRooms += data.blocks[b].rooms.length;
+      }
+      navBtn.querySelector('span').textContent = 'Rooms (' + totalRooms + ')';
+
+      let html = '';
+      for (let b = 0; b < data.blocks.length; b++) {
+        let block = data.blocks[b];
+        let blockRooms = block.rooms;
+        if (filter) {
+          let filtered = [];
+          for (let r = 0; r < blockRooms.length; r++) {
+            let rm = blockRooms[r];
+            let searchable = (rm.roomName || '').toLowerCase() + ' ' + (rm.description || '').toLowerCase() + ' ' + (rm.ownerName || '').toLowerCase();
+            if (searchable.indexOf(filter) >= 0) {
+              filtered.push(rm);
+            }
+          }
+          blockRooms = filtered;
+        }
+        if (blockRooms.length === 0) continue;
+
+        let blockTitle = block.text;
+        if (!blockTitle && currentNavView === 'roomads_view' && b < eventsBlockNames.length) {
+          blockTitle = eventsBlockNames[b];
+        }
+        if (!blockTitle && currentNavView === 'myworld_view' && b < myWorldBlockNames.length) {
+          blockTitle = myWorldBlockNames[b];
+        }
+        if (!blockTitle && currentNavView === 'hotel_view' && b < allRoomsBlockNames.length) {
+          blockTitle = allRoomsBlockNames[b];
+        }
+        if (!blockTitle) {
+          blockTitle = 'Block ' + (b + 1);
+        }
+
+        html += '<div class="room-block-title">';
+        html += '<i data-lucide="layers"></i>';
+        html += escapeHtml(blockTitle);
+        html += '<span class="block-count">' + blockRooms.length + '</span>';
+        html += '</div>';
+
+        for (let r = 0; r < blockRooms.length; r++) {
+          let rm = blockRooms[r];
+          let tagsHtml = '';
+          if (rm.tags && rm.tags.length > 0) {
+            for (let t = 0; t < Math.min(rm.tags.length, 5); t++) {
+              tagsHtml += '<span class="room-tag">' + escapeHtml(rm.tags[t]) + '</span>';
+            }
+          }
+
+          let occPct = rm.maxUserCount > 0 ? (rm.userCount / rm.maxUserCount) * 100 : 0;
+          let occColor = 'green';
+          if (occPct > 80) occColor = 'red';
+          else if (occPct > 50) occColor = 'yellow';
+
+          html += '<div class="room-card" data-flatid="' + rm.flatId + '">';
+          html += '<div class="room-card-icon"><i data-lucide="door-open"></i></div>';
+          html += '<div class="room-card-body">';
+          html += '<div class="room-card-name">' + escapeHtml(rm.roomName || 'Untitled Room') + '</div>';
+          html += '<div class="room-card-desc">' + escapeHtml(rm.description || 'No description') + '</div>';
+          html += '<div class="room-card-meta">';
+          html += '<span class="occupancy-pill ' + occColor + '"><i data-lucide="users"></i>' + rm.userCount + '/' + rm.maxUserCount + '</span>';
+          html += '<span class="meta-item"><i data-lucide="crown"></i>' + escapeHtml(rm.ownerName || '-') + '</span>';
+          if (rm.doorMode === 1) html += '<span class="meta-item"><i data-lucide="lock"></i>Locked</span>';
+          html += '</div>';
+          if (tagsHtml) html += '<div class="room-tags">' + tagsHtml + '</div>';
+          html += '</div></div>';
+        }
+      }
+
+      if (!html) {
+        html = '<div class="room-empty"><i data-lucide="search-x"></i>No rooms match your search</div>';
+      }
+
+      roomList.innerHTML = html;
+      lucide.createIcons();
+
+      let cards = roomList.querySelectorAll('.room-card[data-flatid]');
+      for (let c = 0; c < cards.length; c++) {
+        cards[c].addEventListener('click', function () {
+          let flatId = parseInt(this.getAttribute('data-flatid'));
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'enter_room', data: flatId }));
+          }
+          roomModal.classList.remove('active');
+        });
+      }
+    }
+
+    function escapeHtml(str) {
+      let div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    /* Spinner animation */
+    let style = document.createElement('style');
+    style.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+    document.head.appendChild(style);
   </script>
 </body>
 

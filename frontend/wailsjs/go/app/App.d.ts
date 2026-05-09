@@ -14,4 +14,6 @@ export function GetWebServerURL():Promise<string>;
 
 export function IsWebServerRunning():Promise<boolean>;
 
+export function StartMobileServer():Promise<string>;
+
 export function ToggleWebServer():Promise<string>;
