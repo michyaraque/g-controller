@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <meta name="theme-color" content="#111111">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <title>G-Controller Mobile</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background: #111;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+    }
+
+    .status-bar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: #181818;
+      border-bottom: 1px solid #2a2a2a;
+      font-size: 12px;
+      color: #888;
+      flex-shrink: 0;
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f44;
+      transition: background 0.3s;
+    }
+
+    .status-dot.connected {
+      background: #4c4;
+    }
+
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .controls-row {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      min-height: 0;
+    }
+
+    .joystick-zone {
+      flex: 1.2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .joystick-base {
+      width: min(70vmin, 60vmax);
+      height: min(70vmin, 60vmax);
+      max-width: 260px;
+      max-height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.08) 100%);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      touch-action: none;
+      overflow: hidden;
+    }
+
+    .joystick-base::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 50%;
+      background:
+        linear-gradient(0deg, transparent 49.5%, rgba(255, 255, 255, 0.06) 49.5%, rgba(255, 255, 255, 0.06) 50.5%, transparent 50.5%),
+        linear-gradient(45deg, transparent 49.5%, rgba(255, 255, 255, 0.06) 49.5%, rgba(255, 255, 255, 0.06) 50.5%, transparent 50.5%),
+        linear-gradient(90deg, transparent 49.5%, rgba(255, 255, 255, 0.06) 49.5%, rgba(255, 255, 255, 0.06) 50.5%, transparent 50.5%),
+        linear-gradient(135deg, transparent 49.5%, rgba(255, 255, 255, 0.06) 49.5%, rgba(255, 255, 255, 0.06) 50.5%, transparent 50.5%);
+      pointer-events: none;
+    }
+
+    .joystick-thumb {
+      width: 36%;
+      height: 36%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #eb8d28, #c4701a);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      box-shadow: 0 4px 20px rgba(235, 141, 40, 0.3);
+    }
+
+    .joystick-dir-label {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(14px, 5vmin, 22px);
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.15);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .joystick-segment-label {
+      position: absolute;
+      font-size: clamp(9px, 2.5vmin, 13px);
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.12);
+      pointer-events: none;
+      z-index: 1;
+      transform: translate(-50%, -50%);
+    }
+
+    .look-zone {
+      flex: 0.8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      min-width: 0;
+      min-height: 0;
+      touch-action: auto;
+    }
+
+    .look-wheel {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 4px;
+      width: min(45vmin, 170px);
+      height: min(45vmin, 170px);
+    }
+
+    .look-btn {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #ccc;
+      font-size: clamp(14px, 4vmin, 20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s;
+    }
+
+    .look-btn:active {
+      background: rgba(235, 141, 40, 0.3);
+      border-color: #eb8d28;
+    }
+
+    .look-btn.empty {
+      background: transparent;
+      border: none;
+      pointer-events: none;
+    }
+
+    .chat-bar {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      background: #181818;
+      border-top: 1px solid #2a2a2a;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 24px;
+      padding: 10px 18px;
+      color: #e0e0e0;
+      font-size: 16px;
+      outline: none;
+      min-width: 0;
+    }
+
+    .chat-input:focus {
+      border-color: #eb8d28;
+    }
+
+    .chat-send {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: none;
+      background: #eb8d28;
+      color: #111;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .pos-display {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: #555;
+      font-family: monospace;
+      pointer-events: none;
+    }
+
+    .install-banner {
+      position: fixed;
+      bottom: 64px;
+      left: 12px;
+      right: 12px;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: 100;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+      transition: opacity 0.3s;
+    }
+
+    .install-banner.hidden {
+      display: none;
+    }
+
+    .install-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .install-text strong {
+      display: block;
+      font-size: 13px;
+      color: #eb8d28;
+      margin-bottom: 2px;
+    }
+
+    .install-text span {
+      font-size: 11px;
+      color: #999;
+      line-height: 1.3;
+    }
+
+    .install-dismiss {
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 18px;
+      padding: 4px 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="status-bar">
+    <div class="status-left">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Connecting...</span>
+    </div>
+    <div id="roomInfo"></div>
+  </div>
+
+  <div class="main-area">
+    <div class="pos-display" id="posDisplay"></div>
+
+    <div class="controls-row">
+      <div class="joystick-zone">
+        <div class="joystick-base" id="joystickBase">
+          <div class="joystick-dir-label" id="dirLabel"></div>
+          <div class="joystick-thumb" id="joystickThumb"></div>
+          <span class="joystick-segment-label" style="top:12%;left:50%">N</span>
+          <span class="joystick-segment-label" style="top:22%;left:78%">NE</span>
+          <span class="joystick-segment-label" style="top:50%;left:88%">E</span>
+          <span class="joystick-segment-label" style="top:78%;left:78%">SE</span>
+          <span class="joystick-segment-label" style="top:88%;left:50%">S</span>
+          <span class="joystick-segment-label" style="top:78%;left:22%">SW</span>
+          <span class="joystick-segment-label" style="top:50%;left:12%">W</span>
+          <span class="joystick-segment-label" style="top:22%;left:22%">NW</span>
+        </div>
+      </div>
+
+      <div class="look-zone">
+        <div class="look-wheel">
+          <button class="look-btn" data-dir="8">↖</button>
+           <button class="look-btn" data-dir="1">↑</button>
+            <button class="look-btn" data-dir="2">↗</button>
+           <button class="look-btn" data-dir="7">←</button>
+           <button class="look-btn empty"></button>
+           <button class="look-btn" data-dir="3">→</button>
+            <button class="look-btn" data-dir="6">↙</button>
+           <button class="look-btn" data-dir="5">↓</button>
+           <button class="look-btn" data-dir="4">↘</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-bar">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Chat..." autocomplete="off">
+    <button class="chat-send" id="chatSend">&#9658;</button>
+  </div>
+
+  <div class="install-banner hidden" id="installBanner">
+    <div class="install-text">
+      <strong>Install G-Controller</strong>
+      <span>Install for offline access and home screen shortcut</span>
+    </div>
+    <button class="install-dismiss" id="installDismiss">&times;</button>
+  </div>
+
+  <script>
+    var ws = null;
+    var statusDot = document.getElementById('statusDot');
+    var statusText = document.getElementById('statusText');
+    var roomInfo = document.getElementById('roomInfo');
+    var posDisplay = document.getElementById('posDisplay');
+    var chatInput = document.getElementById('chatInput');
+    var chatSend = document.getElementById('chatSend');
+
+    function connect() {
+      var proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      ws = new WebSocket(proto + '://' + location.host + '/ws');
+
+      ws.onopen = function () {
+        statusDot.classList.add('connected');
+        statusText.textContent = 'Online';
+      };
+
+      ws.onclose = function () {
+        statusDot.classList.remove('connected');
+        statusText.textContent = 'Disconnected';
+        setTimeout(connect, 3000);
+      };
+
+      ws.onmessage = function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (data.type === 'status') {
+            if (data.connected) {
+              statusDot.classList.add('connected');
+              statusText.textContent = 'Online';
+            } else {
+              statusDot.classList.remove('connected');
+              statusText.textContent = 'Offline';
+            }
+            var info = '';
+            if (data.roomId) info = 'Room ' + data.roomId;
+            if (data.hotel) info += ' - ' + data.hotel.toUpperCase();
+            roomInfo.textContent = info;
+            if (data.connected) {
+              posDisplay.textContent = data.userX + ', ' + data.userY;
+            }
+          }
+        } catch (err) { }
+      };
+    }
+
+    function sendChat() {
+      var msg = chatInput.value.trim();
+      if (!msg || !ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ type: 'chat', message: msg }));
+      chatInput.value = '';
+      chatInput.blur();
+    }
+
+    chatSend.addEventListener('click', sendChat);
+    chatInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') sendChat(); });
+
+    var base = document.getElementById('joystickBase');
+    var thumb = document.getElementById('joystickThumb');
+    var dirLabel = document.getElementById('dirLabel');
+    var lastDir = null;
+    var currentMove = null;
+    var moveInterval = null;
+
+    var dirLabels = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'];
+
+    function snapAngle(a) {
+      return Math.round(a / (Math.PI / 4)) * (Math.PI / 4);
+    }
+
+    function startMoveLoop() {
+      if (moveInterval) return;
+      moveInterval = setInterval(function () {
+        if (currentMove && ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'move', direction: currentMove }));
+        }
+      }, 33);
+    }
+
+    function stopMoveLoop() {
+      if (moveInterval) {
+        clearInterval(moveInterval);
+        moveInterval = null;
+      }
+    }
+
+    function handleJoystick(cx, cy) {
+      var rect = base.getBoundingClientRect();
+      var halfW = rect.width / 2;
+      var dx = cx - rect.left - halfW;
+      var dy = cy - rect.top - halfW;
+      var maxDist = halfW - 16;
+      var dist = Math.min(Math.sqrt(dx * dx + dy * dy), maxDist);
+
+      if (dist <= 10) {
+        resetJoystick();
+        return;
+      }
+
+      var angle = Math.atan2(dy, dx);
+      var snapped = snapAngle(angle);
+
+      var nx = Math.cos(snapped);
+      var ny = Math.sin(snapped);
+      var tx = nx * maxDist;
+      var ty = ny * maxDist;
+      thumb.style.transform = 'translate(calc(-50% + ' + tx + 'px), calc(-50% + ' + ty + 'px))';
+
+      currentMove = { x: nx, y: ny };
+      startMoveLoop();
+
+      var di = ((Math.round(snapped / (Math.PI / 4)) % 8) + 8) % 8;
+      var label = dirLabels[di];
+
+      if (label !== lastDir) {
+        lastDir = label;
+        dirLabel.textContent = label;
+      }
+    }
+
+    function resetJoystick() {
+      stopMoveLoop();
+      currentMove = null;
+      thumb.style.transform = 'translate(-50%, -50%)';
+      lastDir = null;
+      dirLabel.textContent = '';
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'move_stop' }));
+      }
+    }
+
+    base.addEventListener('touchstart', function (e) {
+      e.preventDefault();
+      handleJoystick(e.touches[0].clientX, e.touches[0].clientY);
+    });
+    base.addEventListener('touchmove', function (e) {
+      e.preventDefault();
+      handleJoystick(e.touches[0].clientX, e.touches[0].clientY);
+    });
+    base.addEventListener('touchend', function (e) { e.preventDefault(); resetJoystick(); });
+    base.addEventListener('touchcancel', function (e) { e.preventDefault(); resetJoystick(); });
+
+    base.addEventListener('mousedown', function (e) {
+      base._drag = true;
+      handleJoystick(e.clientX, e.clientY);
+    });
+    document.addEventListener('mousemove', function (e) {
+      if (base._drag) handleJoystick(e.clientX, e.clientY);
+    });
+    document.addEventListener('mouseup', function () { base._drag = false; resetJoystick(); });
+
+    document.querySelectorAll('.look-btn[data-dir]').forEach(function (btn) {
+      btn.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        var dir = parseInt(btn.getAttribute('data-dir'));
+        console.log('look button pressed: dir=' + dir + ' wsReady=' + (ws ? ws.readyState : 'null'));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'look', dir: dir }));
+        }
+      });
+    });
+
+    var deferredPrompt = null;
+    var installBanner = document.getElementById('installBanner');
+    var installDismiss = document.getElementById('installDismiss');
+    var installDismissed = localStorage.getItem('pwa_install_dismissed');
+
+    var isInstalled = window.matchMedia('(display-mode: standalone)').matches;
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(function (reg) {
+        console.log('SW registered');
+      }).catch(function (err) {
+        console.log('SW registration failed:', err);
+      });
+    }
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      showInstallBanner();
+    });
+
+    function isLocalSecureOrigin() {
+      return location.protocol === 'https:' ||
+        location.hostname === 'localhost' ||
+        location.hostname === '127.0.0.1' ||
+        location.hostname === '::1';
+    }
+
+    function showInstallBanner() {
+      if (isInstalled || installDismissed) return;
+      installBanner.classList.remove('hidden');
+    }
+
+    installDismiss.addEventListener('click', function () {
+      installBanner.classList.add('hidden');
+      localStorage.setItem('pwa_install_dismissed', '1');
+    });
+
+    installBanner.addEventListener('click', async function (e) {
+      if (e.target === installDismiss || installDismiss.contains(e.target)) return;
+
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        var result = await deferredPrompt.userChoice;
+        if (result.outcome === 'accepted') {
+          console.log('PWA installed');
+        }
+        deferredPrompt = null;
+        installBanner.classList.add('hidden');
+      } else {
+        var hintEl = installBanner.querySelector('.install-text span');
+        if (navigator.userAgent.match(/Android/)) {
+          hintEl.textContent = 'Tap the menu (⋮) → \"Add to Home screen\"';
+        } else if (navigator.userAgent.match(/iPhone|iPad/)) {
+          hintEl.textContent = 'Tap Share → \"Add to Home Screen\"';
+        } else {
+          hintEl.textContent = 'Use your browser menu to install this app';
+        }
+      }
+    });
+
+    if (!isLocalSecureOrigin() && !isInstalled && !installDismissed) {
+      setTimeout(showInstallBanner, 3000);
+    }
+
+    connect();
+  </script>
+</body>
+
+</html>

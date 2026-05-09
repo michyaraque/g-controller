@@ -1,0 +1,29 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "gapi-client",
+  "outputfilename": "gapi-client",
+
+  "frontend:install": "pnpm install",
+  "frontend:build": "pnpm run build",
+  "frontend:dev:watcher": "pnpm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "wailsjsdir": "./frontend",
+
+  "author": {
+    "name": "Michael Araque (cebolla1)",
+    "email": "",
+    "url": "https://github.com/michyaraque"
+  },
+
+  "info": {
+    "companyName": "G-Controller",
+    "productName": "G-Controller",
+    "productVersion": "0.1.0",
+    "copyright": "",
+    "comments": "G-Controller for mobile devices"
+  },
+
+  "exclude": [
+    ".vscode"
+  ]
+}

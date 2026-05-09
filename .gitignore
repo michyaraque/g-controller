@@ -1,0 +1,51 @@
+# Binaries
+wired-engine
+cli
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+wireds_tracking.json
+wireds_placed_ids.json
+
+# Build artifacts
+dist/
+build/bin
+
+cache/
+
+# Frontend
+node_modules/
+frontend/dist/*
+!frontend/dist/.gitkeep
+.pnpm-store/
+pnpm-lock.yaml
+
+# Wails
+wails_debug.log
+
+package.json.md5
