@@ -24,17 +24,10 @@ var appInfo AppInfo
 func init() {
 	data, err := os.ReadFile("wails.json")
 	if err != nil {
-		appInfo = AppInfo{
-			Name:        "G-Controller",
-			Version:     "0.1.0",
-			Description: "G-Controller",
-			Author:      "cebolla1",
-		}
 		return
 	}
 
 	var config struct {
-		Name string `json:"name"`
 		Info struct {
 			ProductName    string `json:"productName"`
 			ProductVersion string `json:"productVersion"`
@@ -45,12 +38,6 @@ func init() {
 		} `json:"author"`
 	}
 	if err := json.Unmarshal(data, &config); err != nil {
-		appInfo = AppInfo{
-			Name:        "G-Controller",
-			Version:     "0.1.0",
-			Description: "Move with Joystick, send chat and more...",
-			Author:      "cebolla1",
-		}
 		return
 	}
 
@@ -80,11 +67,11 @@ type EngineManager struct {
 	userDir int
 	userID  int
 
-	moveDir  atomic.Int32
-	serverX  atomic.Int32
-	serverY  atomic.Int32
-	moveWg   sync.WaitGroup
-	stopCh   chan struct{}
+	moveDir atomic.Int32
+	serverX atomic.Int32
+	serverY atomic.Int32
+	moveWg  sync.WaitGroup
+	stopCh  chan struct{}
 }
 
 func NewEngineManager(ctx context.Context) *EngineManager {
@@ -335,6 +322,7 @@ func (em *EngineManager) onInitialized(e g.InitArgs) {
 
 func (em *EngineManager) onActivated() {
 	runtime.WindowShow(em.ctx)
+	runtime.EventsEmit(em.ctx, "engine:activated")
 }
 
 func (em *EngineManager) onConnected(e g.ConnectArgs) {

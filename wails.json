@@ -10,7 +10,7 @@
   "wailsjsdir": "./frontend",
 
   "author": {
-    "name": "Michael Araque (cebolla1)",
+    "name": "cebolla1",
     "email": "",
     "url": "https://github.com/michyaraque"
   },
@@ -18,9 +18,9 @@
   "info": {
     "companyName": "G-Controller",
     "productName": "G-Controller",
-    "productVersion": "0.2.0",
+    "productVersion": "0.2.6",
     "copyright": "",
-    "comments": "G-Controller for mobile devices"
+    "comments": "Joystick controller for mobile devices"
   },
 
   "exclude": [

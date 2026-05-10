@@ -39,20 +39,22 @@ function App() {
     checkServerStatus()
     updateEngineStatus()
 
-    if (autoStart) {
-      StartMobileServer().then(url => {
-        if (url) {
-          setMobileURL(url)
-          setWebServerRunning(true)
-          generateQR(url)
-        }
-      }).catch(() => {})
-    }
     const interval = setInterval(() => {
       updateEngineStatus()
       checkServerStatus()
     }, 2000)
 
+    window.runtime?.EventsOn('engine:activated', () => {
+      if (autoStart) {
+        StartMobileServer().then(url => {
+          if (url) {
+            setMobileURL(url)
+            setWebServerRunning(true)
+            generateQR(url)
+          }
+        }).catch(() => {})
+      }
+    })
     window.runtime?.EventsOn('engine:connected', () => updateEngineStatus())
     window.runtime?.EventsOn('engine:disconnected', () => updateEngineStatus())
     window.runtime?.EventsOn('engine:room-detected', () => updateEngineStatus())
@@ -73,6 +75,7 @@ function App() {
 
     return () => {
       clearInterval(interval)
+      window.runtime?.EventsOff('engine:activated')
       window.runtime?.EventsOff('engine:connected')
       window.runtime?.EventsOff('engine:disconnected')
       window.runtime?.EventsOff('engine:room-detected')
