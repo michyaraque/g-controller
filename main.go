@@ -33,6 +33,7 @@ func main() {
 		OnStartup:        appInstance.Startup,
 		OnDomReady:       appInstance.DomReady,
 		OnShutdown:       appInstance.Shutdown,
+		OnBeforeClose:    appInstance.BeforeClose,
 		Frameless:        true,
 		CSSDragProperty:  "widows",
 		CSSDragValue:     "1",

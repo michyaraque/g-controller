@@ -42,6 +42,11 @@ func (a *App) DomReady(ctx context.Context) {
 	})
 }
 
+func (a *App) BeforeClose(ctx context.Context) bool {
+	wailsRuntime.WindowHide(ctx)
+	return true
+}
+
 func (a *App) startMobileServer() {
 	if err := a.webServer.Start(); err != nil {
 		logger.Error("Failed to start mobile web server: %v", err)

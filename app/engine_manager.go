@@ -103,6 +103,7 @@ func NewEngineManager(ctx context.Context) *EngineManager {
 	ext.Initialized(em.onInitialized)
 	ext.Connected(em.onConnected)
 	ext.Disconnected(em.onDisconnected)
+	ext.Activated(em.onActivated)
 
 	ext.Intercept(in.Chat, in.Whisper, in.Shout).With(em.handleChat)
 	ext.Intercept(in.OpenConnection).With(em.handleOpenConnection)
@@ -313,6 +314,10 @@ func (em *EngineManager) updateHubStatus() {
 
 func (em *EngineManager) onInitialized(e g.InitArgs) {
 	runtime.EventsEmit(em.ctx, "engine:initialized")
+}
+
+func (em *EngineManager) onActivated() {
+	runtime.WindowShow(em.ctx)
 }
 
 func (em *EngineManager) onConnected(e g.ConnectArgs) {
