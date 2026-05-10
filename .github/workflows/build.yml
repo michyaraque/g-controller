@@ -77,11 +77,13 @@ jobs:
 
       - name: Build (macOS)
         if: runner.os == 'macOS'
-        run: wails build -platform ${{ matrix.build.platform }} -clean -o ${{ matrix.build.name }}
+        run: wails build -platform ${{ matrix.build.platform }} -clean
 
       - name: Package macOS app
         if: runner.os == 'macOS'
-        run: ditto -c -k --keepParent build/bin/${{ matrix.build.name }}.app build/bin/${{ matrix.build.name }}.app.zip
+        run: |
+          APP=$(find build/bin -name "*.app" -maxdepth 1 | head -1)
+          ditto -c -k --keepParent "$APP" build/bin/g-controller-mac.app.zip
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
