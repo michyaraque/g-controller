@@ -16,18 +16,20 @@ const (
 )
 
 type Manager struct {
-	ext            *g.Ext
-	users          map[int]Entity
-	localUserID    int
-	onPosition     func(x, y, dir int)
+	ext              *g.Ext
+	users            map[int]Entity
+	localUserID      int
+	localHabboID     int
+	onPosition       func(x, y, dir int)
 	onLocalUserFound func(index int)
 }
 
 func New(ext *g.Ext, onPosition func(x, y, dir int), onLocalUserFound func(index int)) *Manager {
 	m := &Manager{
-		ext:            ext,
-		users:          make(map[int]Entity),
-		onPosition:     onPosition,
+		ext:              ext,
+		users:            make(map[int]Entity),
+		localUserID:      -1,
+		onPosition:       onPosition,
 		onLocalUserFound: onLocalUserFound,
 	}
 
@@ -55,11 +57,17 @@ func (m *Manager) onExpression(e *g.Intercept) {
 	index := pkt.ReadInt()
 	_ = pkt.ReadInt()
 
-	if m.localUserID == 0 {
+	if m.localUserID == -1 {
 		m.localUserID = index
+		if m.localHabboID == 0 {
+			if ent, ok := m.users[index]; ok {
+				m.localHabboID = ent.HabboID
+			}
+		}
 		if m.onLocalUserFound != nil {
 			m.onLocalUserFound(index)
 		}
+		go m.ext.Send(out.LookTo, 0, 0)
 	}
 }
 
@@ -68,7 +76,7 @@ func (m *Manager) onUsers(e *g.Intercept) {
 	count := pkt.ReadInt()
 
 	for i := 0; i < count; i++ {
-		_ = pkt.ReadInt()
+		habboID := pkt.ReadInt()
 		name := pkt.ReadString()
 		_ = pkt.ReadString()
 		_ = pkt.ReadString()
@@ -76,14 +84,16 @@ func (m *Manager) onUsers(e *g.Intercept) {
 		x := pkt.ReadInt()
 		y := pkt.ReadInt()
 		_ = pkt.ReadString()
-		_ = pkt.ReadInt()
+		dir := pkt.ReadInt()
 		entityType := pkt.ReadInt()
 
 		if entityType == EntityTypeHabbo {
 			m.users[index] = Entity{
+				HabboID:  habboID,
 				Name:     name,
 				JoinTime: time.Now(),
 				Tile:     Tile{X: x, Y: y},
+				Dir:      dir,
 			}
 			_ = pkt.ReadString()
 			_ = pkt.ReadInt()
@@ -92,6 +102,18 @@ func (m *Manager) onUsers(e *g.Intercept) {
 			_ = pkt.ReadString()
 			_ = pkt.ReadInt()
 			_ = pkt.ReadBool()
+
+			if m.localHabboID != 0 && habboID == m.localHabboID {
+				m.localUserID = index
+				if m.onLocalUserFound != nil {
+					m.onLocalUserFound(index)
+				}
+				if m.onPosition != nil {
+					m.onPosition(x, y, dir)
+				}
+			} else if m.localUserID >= 0 && index == m.localUserID && m.localHabboID == 0 {
+				m.localHabboID = habboID
+			}
 		} else if entityType == EntityTypePet {
 			_ = pkt.ReadInt()
 			_ = pkt.ReadInt()
@@ -115,8 +137,6 @@ func (m *Manager) onUsers(e *g.Intercept) {
 			}
 		}
 	}
-
-	_ = len(m.users)
 }
 
 func (m *Manager) onUserRemove(e *g.Intercept) {
@@ -125,7 +145,7 @@ func (m *Manager) onUserRemove(e *g.Intercept) {
 	fmt.Sscanf(indexStr, "%d", &index)
 
 	delete(m.users, index)
-	m.localUserID = 0
+	m.localUserID = -1
 	m.users = make(map[int]Entity)
 }
 
@@ -134,9 +154,11 @@ func (m *Manager) onRoomReady(e *g.Intercept) {
 	_ = e.Packet.ReadInt()
 
 	m.users = make(map[int]Entity)
-	m.localUserID = 0
+	m.localUserID = -1
 
-	m.ProbeLocalIndex()
+	if m.localHabboID == 0 {
+		m.ProbeLocalIndex()
+	}
 }
 
 func (m *Manager) onUserUpdate(e *g.Intercept) {
@@ -156,7 +178,7 @@ func (m *Manager) onUserUpdate(e *g.Intercept) {
 		m.users[index] = ent
 	}
 
-	if m.localUserID > 0 && index == m.localUserID && m.onPosition != nil {
+	if m.localUserID >= 0 && index == m.localUserID && m.onPosition != nil {
 		m.onPosition(x, y, direction)
 	}
 }

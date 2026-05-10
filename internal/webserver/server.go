@@ -71,14 +71,18 @@ func NewHub(actions ActionHandler) *Hub {
 
 func (h *Hub) Run() {
 	for msg := range h.broadcast {
-		h.mu.RLock()
+		h.mu.Lock()
+		var failed []*websocket.Conn
 		for client := range h.clients {
 			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
-				client.Close()
-				delete(h.clients, client)
+				failed = append(failed, client)
 			}
 		}
-		h.mu.RUnlock()
+		for _, client := range failed {
+			client.Close()
+			delete(h.clients, client)
+		}
+		h.mu.Unlock()
 	}
 }
 

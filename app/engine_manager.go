@@ -326,6 +326,8 @@ func (em *EngineManager) onConnected(e g.ConnectArgs) {
 	em.hotel = extractHotelCode(e.Host)
 	em.mu.Unlock()
 
+	em.roomMgr.ProbeLocalIndex()
+
 	runtime.EventsEmit(em.ctx, "engine:connected", map[string]interface{}{
 		"hotel": em.hotel,
 	})
