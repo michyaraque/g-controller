@@ -1,6 +1,6 @@
 # G-Controller
-
 Move your Habbo avatar from your phone.
+![](/docs/images/mobile-pad.png)
 
 ## The problem
 
