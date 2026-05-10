@@ -80,9 +80,11 @@ type EngineManager struct {
 	userDir int
 	userID  int
 
-	moveDir atomic.Int32
-	moveWg  sync.WaitGroup
-	stopCh  chan struct{}
+	moveDir  atomic.Int32
+	serverX  atomic.Int32
+	serverY  atomic.Int32
+	moveWg   sync.WaitGroup
+	stopCh   chan struct{}
 }
 
 func NewEngineManager(ctx context.Context) *EngineManager {
@@ -219,35 +221,43 @@ func (em *EngineManager) moveLoop() {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
-	var predictX, predictY int
-	initialized := false
+	em.mu.RLock()
+	predictX := em.userX
+	predictY := em.userY
+	em.mu.RUnlock()
+
+	sendMove := func() bool {
+		dir := int(em.moveDir.Load())
+		if dir == 0 {
+			return false
+		}
+		sx := int(em.serverX.Load())
+		sy := int(em.serverY.Load())
+		if abs(sx-predictX) > 1 || abs(sy-predictY) > 1 {
+			predictX = sx
+			predictY = sy
+		}
+		dx, dy := em.directionDelta(dir)
+		predictX += dx
+		predictY += dy
+		if em.ext.IsConnected() {
+			em.ext.Send(out.MoveAvatar, predictX, predictY)
+		}
+		return true
+	}
+
+	if !sendMove() {
+		return
+	}
 
 	for {
 		select {
 		case <-em.stopCh:
 			return
 		case <-ticker.C:
-		}
-
-		dir := int(em.moveDir.Load())
-		if dir == 0 {
-			return
-		}
-
-		dx, dy := em.directionDelta(dir)
-
-		em.mu.RLock()
-		if !initialized {
-			predictX = em.userX
-			predictY = em.userY
-			initialized = true
-		}
-		predictX += dx
-		predictY += dy
-		em.mu.RUnlock()
-
-		if em.ext.IsConnected() {
-			em.ext.Send(out.MoveAvatar, predictX, predictY)
+			if !sendMove() {
+				return
+			}
 		}
 	}
 }
@@ -271,6 +281,13 @@ func (em *EngineManager) calculateDirection(x, y float64) int {
 		return 4
 	}
 	return 0
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 func (em *EngineManager) directionDelta(dir int) (int, int) {
@@ -367,6 +384,9 @@ func (em *EngineManager) onUserPosition(x, y, dir int) {
 	em.userY = y
 	em.userDir = dir
 	em.mu.Unlock()
+
+	em.serverX.Store(int32(x))
+	em.serverY.Store(int32(y))
 
 	em.updateHubStatus()
 }
