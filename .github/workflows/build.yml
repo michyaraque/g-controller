@@ -8,6 +8,7 @@ on:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=4096"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -29,8 +30,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -47,8 +46,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
-          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -81,10 +78,6 @@ jobs:
       - name: Build (macOS)
         if: runner.os == 'macOS'
         run: wails build -platform ${{ matrix.build.platform }} -clean -o ${{ matrix.build.name }}
-
-      - name: Set permissions (Linux/macOS)
-        if: runner.os != 'Windows'
-        run: chmod +x build/bin/${{ matrix.build.name }} 2>/dev/null || chmod +x build/bin/${{ matrix.build.name }}.app/Contents/MacOS/* 2>/dev/null || true
 
       - name: Package macOS app
         if: runner.os == 'macOS'
