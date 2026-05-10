@@ -1,7 +1,7 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "gapi-client",
-  "outputfilename": "gapi-client",
+  "name": "g-controller",
+  "outputfilename": "g-controller",
 
   "frontend:install": "pnpm install",
   "frontend:build": "pnpm run build",
